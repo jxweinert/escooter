@@ -223,7 +223,7 @@ void loop()
   checkForSMS();
   boolean bAlarmOn = digitalRead(ALARM_INPUT) == HIGH;
   if (bAlarmOn) {
-    mySerial.println("Alarm seems to be on, confirming");
+    mySerial.println("Alarm seens to be on, confirming");
     bAlarmOn = confirmAlarmOn();
   }
   if (bAlarmOn) {
