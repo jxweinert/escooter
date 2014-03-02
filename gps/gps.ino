@@ -42,30 +42,100 @@ void setup () {
 	start_gps ();	//open GPS
 }
 
+void clearGPSData()
+{
+  for (int i = 0; i < GPS_BUF_SIZE; i++)
+    gps_buf[i]=0;
+}
+
+String getDecimalDegrees(const char* gpsInput)
+{
+  String inputString = gpsInput;
+  int decimalPosition = -1;
+  for (int i = 0; i < inputString.length(); i++)
+  {
+    if (inputString[i] == '.') 
+      decimalPosition = i;
+  }
+  if (decimalPosition < 0) {
+    return "";
+  }
+  int minutesPosition = decimalPosition - 2;
+  String strDegrees = inputString.substring(0, minutesPosition);
+  String strMinutes = inputString.substring(minutesPosition, inputString.length());
+
+  double dDegrees = atof(strDegrees.c_str());
+  double dMinutes = atof(strMinutes.c_str());
+  double dCalculatedDegrees = dDegrees + dMinutes/60;
+  
+  char calculatedDegrees[30];
+  dtostrf(dCalculatedDegrees,2,5,calculatedDegrees);
+  return calculatedDegrees;  
+}
+
+
+// send message to mobile
+void gsm_send_message (const char *message) {
+	Serial.println (message);
+}
+
+String strUrlBase = "https://maps.google.com/maps?q=";
+
+String getGPSMessage()
+{
+  String latitude = getDecimalDegrees(gps_gga_lat_s());
+  String longitude = getDecimalDegrees(gps_gga_long_s());
+  MySerial.println("Longitude: " + longitude);
+  MySerial.println("Latitude: " + latitude);
+
+  String result = strUrlBase + latitude + "," + longitude;
+  return result;
+}
+
 //
+
+long lastMessageSent = 0;
+boolean bCannotGetFixMessageSent = false;
 void loop () {
 	int stat = gps_get_gga ();	// read data from GPS, return 0 is ok
 	#ifdef DEBUG
-	MySerial.println ("gps_get_gga () return stat:");
-	MySerial.println (stat);	//for test
+        if (stat != 0) {
+    	  MySerial.print ("gps_get_gga () return stat: ");
+	  MySerial.println (stat);	//for test
+        }
 	#endif
 
-	if (stat == 0 || stat == 1) {
-		if (gps_gga_is_fix ()) {	//true if fix
-			//send_message ("18501683475", gps_gga_utc_s ());
-			gsm_set_numble ("18601602912");	//
-			gsm_send_message (gps_gga_utc_s ());
-			gsm_send_message (gps_gga_EW ());
-			gsm_send_message (gps_gga_NS ());
-			gsm_send_message (gps_gga_lat_s ());
-			gsm_send_message (gps_gga_long_s ());
-			gsm_end_send ();
-			delay(60000);
-                        static int numOfSends = 0;
-                        numOfSends++;
-                        if (numOfSends > 5)
-                          while (1);
-		}
+//       long currentTime = millis();
+       boolean bSendMessage = true;
+     //  if (currentTime - lastMessageSent > 60000) // once a minute
+       //{
+         //bSendMessage = true;
+         //lastMessageSent = currentTime;
+        //MySerial.println("More than a minute since the last message.");
+       //} else {
+         //char strTime[20];
+         //ltoa(currentTime, strTime, 10);
+         //MySerial.print("Time at: ");
+         //MySerial.println(strTime);
+       //}
+       
+        if ((stat == 0 || stat == 1) && bSendMessage) {
+          char* strPhoneNumber = "18601602912";
+            if (gps_gga_is_fix ()) {	//true if fix
+              gsm_set_numble (strPhoneNumber);	//
+              String message = getGPSMessage();
+              gsm_send_message(message.c_str());
+              clearGPSData();
+              gsm_end_send ();
+              bCannotGetFixMessageSent = false;
+              while(1)
+                ;
+            }// else if (bCannotGetFixMessageSent == false) {
+              //gsm_set_numble (strPhoneNumber);	//
+              //gsm_send_message("Cannot get GPS fix");
+              //gsm_end_send ();
+              //bCannotGetFixMessageSent = true;
+            //}
 	}
 
 	//
