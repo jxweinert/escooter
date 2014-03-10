@@ -1,4 +1,4 @@
- // Product name: GPS/GPRS/GSM Module V3.0
+// Product name: GPS/GPRS/GSM Module V3.0
 // # Product SKU : TEL0051
 
 // # Description:
@@ -40,13 +40,13 @@ SoftwareSerial mySerial(softSerialIn, softSerialOut);
 void setup()
 {
   // set the data rate for the SoftwareSerial port
-//  pinMode(softSerialIn, INPUT);
+  //  pinMode(softSerialIn, INPUT);
   pinMode(softSerialOut, OUTPUT);
   mySerial.begin(4800);
-  mySerial.println("Setup Beginning");
+  mySerial.println("\nSetup Beginning");
+  GPSSetup();
 
-
-    // Transmitter is connected to Arduino Pin #10
+  // Transmitter is connected to Arduino Pin #10
   mySwitch.enableTransmit(10);
 
   //Init the driver pins for GSM function
@@ -70,7 +70,7 @@ void setup()
 
   // start off as locked;
   sendScooterLock(true);
-  
+
   mySerial.println("Setup Complete");
 }
 
@@ -94,7 +94,7 @@ void checkForSMS()
     inchar=Serial.read();
     if(inchar=='T')
     {
-//      mySerial.println("Received character 'T'");
+      //      mySerial.println("Received character 'T'");
       delay(10);
       inchar=Serial.read();
       if (inchar=='I')                                      //When the GSM module get the message, it will display the sign '+CMTI "SM", 1' in the serial port
@@ -103,23 +103,26 @@ void checkForSMS()
         delay(10);
         Serial.println("AT+CMGR=1");                       //When Arduino read the sign, send the "read" AT command to the module
         delay(10);
-      } else {
-//        mySerial.println("Received unexpected character: " + inchar);
+      } 
+      else {
+        //        mySerial.println("Received unexpected character: " + inchar);
       }
-    } else if (inchar=='L')
+    } 
+    else if (inchar=='L')
     {
       delay(10);
       inchar = Serial.read();
       if (inchar=='L') {
         mySerial.println("Received lock SMS");
-        
+
         mySerial.println("Turning off eScooter power");
         delay(10);
         digitalWrite(IGNrelay,LOW);                         //Turn off eScooter power
 
         delay(500);
         sendScooterLock(true);
-      } else if (inchar=='H') {
+      } 
+      else if (inchar=='H') {
         mySerial.println("Received unlock SMS");
         delay(500);
         sendScooterLock(false);
@@ -128,22 +131,22 @@ void checkForSMS()
       Serial.println("AT+CMGD=1,4");                   //Delete all message
       delay(500);
     }
-//    else if (inchar=='U')                                     //Thw SMS("U") was display in the Serial port, and Arduino has recognize it.
-//    {
-//       mySerial.println("Received unlock signal");
-//
-//        delay(500);
-//        sendScooterLock(false);
-//
-//        delay(10);
-//        digitalWrite(IGNrelay,HIGH);                         //Turn on led
-//        Serial.println("AT+CMGD=1,4");                    //Delete all message
-//        delay(500);
-//    }
+    //    else if (inchar=='U')                                     //Thw SMS("U") was display in the Serial port, and Arduino has recognize it.
+    //    {
+    //       mySerial.println("Received unlock signal");
+    //
+    //        delay(500);
+    //        sendScooterLock(false);
+    //
+    //        delay(10);
+    //        digitalWrite(IGNrelay,HIGH);                         //Turn on led
+    //        Serial.println("AT+CMGD=1,4");                    //Delete all message
+    //        delay(500);
+    //    }
     else if (inchar=='D')
     {
       // activate self destruct
-      digitalWrite(selfDestruct, HIGH);
+//      digitalWrite(selfDestruct, HIGH);
     }
   }
 }
@@ -205,13 +208,16 @@ String gStrMessage = "Your bike is being stolen";
 
 void loop()
 {
-// read the magnetic switch state:
+  // call the GPS3 file's loop
+  GPSLoop();
+
+  // read the magnetic switch state:
   ButtonState = digitalRead(MagSwitch);
 
   // compare the switch state to its previous state
   if (ButtonState != lastButtonState) {
-      // if the kickstand is down, MagSwitch will be HIGH, need to lock and power off eScooter
-      // from off to on:
+    // if the kickstand is down, MagSwitch will be HIGH, need to lock and power off eScooter
+    // from off to on:
     if (ButtonState == HIGH && confirmMagSwitchOn()) {
       mySerial.println("Magnetic switch is being turned on");
       digitalWrite(IGNrelay, LOW);                            // turns off ignition
@@ -238,3 +244,4 @@ void loop()
     enableSMSLed(false);
   }
 }
+
